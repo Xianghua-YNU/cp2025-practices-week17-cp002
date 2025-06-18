@@ -8,54 +8,49 @@ import matplotlib.pyplot as plt
 
 def solve_ode(h, g, max_iter=10000, tol=1e-6):
     """
-    实现松弛迭代法求解常微分方程 d²x/dt² = -g
-    边界条件：x(0) = x(10) = 0（抛体运动问题）
+    松弛迭代法求解二阶常微分方程边值问题
+    d²x/dt² = -g  with x(0)=0, x(10)=0
     
     参数:
-        h (float): 时间步长
-        g (float): 重力加速度
-        max_iter (int): 最大迭代次数
-        tol (float): 收敛容差
-    
+        h: 时间步长 (s)
+        g: 重力加速度 (m/s²)
+        max_iter: 最大迭代次数
+        tol: 收敛容差
+        
     返回:
         tuple: (时间数组, 解数组)
-    
-    物理背景: 质量为1kg的球从高度x=0抛出，10秒后回到x=0
-    数值方法: 松弛迭代法，迭代公式 x(t) = 0.5*h²*g + 0.5*[x(t+h)+x(t-h)]
-    
-    实现步骤:
-    1. 初始化时间数组和解数组
-    2. 应用松弛迭代公式直到收敛
-    3. 返回时间和解数组
     """
-    # 初始化时间数组
     t = np.arange(0, 10 + h, h)
+    x = np.zeros_like(t)
+    delta = float('inf')
+    iteration = 0
     
-    # 初始化解数组，边界条件已满足：x[0] = x[-1] = 0
-    x = np.zeros(t.size)
+    # 核心迭代结构
+    while delta > tol and iteration < max_iter:
+        x_new = np.copy(x)
+        x_new[1:-1] = 0.5 * (h**2 * g + x[2:] + x[:-2])
+        delta = np.max(np.abs(x_new - x))
+        x = x_new
+        iteration += 1
     
-    # TODO: 实现松弛迭代算法
-    # 提示：
-    # 1. 设置初始变化量 delta = 1.0
-    # 2. 当 delta > tol 时继续迭代
-    # 3. 对内部点应用公式：x_new[1:-1] = 0.5 * (h*h*g + x[2:] + x[:-2])
-    # 4. 计算最大变化量：delta = np.max(np.abs(x_new - x))
-    # 5. 更新解：x = x_new
-    
-    raise NotImplementedError(f"请在 {__file__} 中实现此函数")
+    return t, x
 
 if __name__ == "__main__":
-    # 测试参数
-    h = 10 / 100  # 时间步长
-    g = 9.8       # 重力加速度
+    h = 0.1
+    g = 9.8
     
-    # 调用求解函数
-    t, x = solve_ode(h, g)
+    t, x_num = solve_ode(h, g)
+    x_analytical = -0.5 * g * t**2 + 5 * g * t
     
-    # 绘制结果
-    plt.plot(t, x)
-    plt.xlabel('时间 (s)')
-    plt.ylabel('高度 (m)')
-    plt.title('抛体运动轨迹 (松弛迭代法)')
-    plt.grid()
+    plt.figure(figsize=(10, 5))
+    plt.plot(t, x_num, 'b-', linewidth=2, label='Numerical Solution')
+    plt.plot(t, x_analytical, 'r--', label='Analytical Solution')
+    plt.xlabel('Time (s)', fontsize=12)
+    plt.ylabel('Height (m)', fontsize=12)
+    plt.title('Projectile Trajectory (Relaxation Method)', fontsize=14)
+    plt.legend(fontsize=12)
+    plt.grid(alpha=0.3)
     plt.show()
+    
+    max_error = np.max(np.abs(x_num - x_analytical))
+    print(f"Maximum absolute error: {max_error:.3e}")
